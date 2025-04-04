@@ -74,3 +74,36 @@ services:
       AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET_FILE: /config/secrets/JWT_SECRET
       AUTHELIA_SESSION_SECRET_FILE: /config/secrets/SESSION_SECRET
       AUTHELIA_STORAGE_ENCRYPTION_KEY_FILE: /config/secrets/STORAGE_ENCRYPTION_KEY
+
+  pgbackweb_postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: pgbackweb
+      POSTGRES_PASSWORD: password
+    volumes:
+      - ../data/pgbackweb_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  pgbackweb:
+    image: eduardolat/pgbackweb:latest
+    ports:
+      - "8085:8085" # Access the web interface at http://localhost:8085
+    volumes:
+      - ../data/pgbackweb_backups:/backups # Mount your backup directory
+    environment:
+      PBW_ENCRYPTION_KEY: "fPLOhZupFq+S8Rt2SmcF7wQD2TkyeL4VwiThWO0JR0U="
+      PBW_POSTGRES_CONN_STRING: "postgresql://postgres:password@pgbackweb_postgres:5432/pgbackweb?sslmode=disable"
+      TZ: "Asia/Kolkata"
+    depends_on:
+      pgbackweb_postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.pgbackweb.rule=Host(`pgbackweb.${MY_DOMAIN}`)'
+      - 'traefik.http.routers.pgbackweb.entryPoints=websecure'
