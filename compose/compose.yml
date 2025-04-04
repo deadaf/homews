@@ -77,6 +77,7 @@ services:
 
   pgbackweb_postgres:
     image: postgres:17
+    container_name: pgbackweb_postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_DB: pgbackweb
@@ -91,6 +92,7 @@ services:
 
   pgbackweb:
     image: eduardolat/pgbackweb:latest
+    container_name: pgbackweb
     volumes:
       - ../data/pgbackweb_backups:/backups # Mounting the backup dir
     environment:
@@ -105,3 +107,27 @@ services:
       - 'traefik.enable=true'
       - 'traefik.http.routers.pgbackweb.rule=Host(`pgbackweb.${MY_DOMAIN}`)'
       - 'traefik.http.routers.pgbackweb.entryPoints=websecure'
+
+
+
+  dozzle:
+      image: amir20/dozzle:latest
+      container_name: dozzle
+      depends_on:
+        - authelia
+        
+      volumes:
+        - /var/run/docker.sock:/var/run/docker.sock
+
+      environment:
+        DOZZLE_AUTH_PROVIDER: forward-proxy
+
+      restart: unless-stopped
+      labels:
+        - 'traefik.enable=true'
+        - 'traefik.http.routers.dozzle.rule=Host(`logs.${MY_DOMAIN}`)'
+        - 'traefik.http.routers.dozzle.entryPoints=websecure'
+        - 'traefik.http.services.dozzle.loadbalancer.server.port=8080'
+        - "traefik.http.routers.dozzle.tls=true"
+        - "traefik.http.routers.dozzle.tls.options=default"
+        - "traefik.http.routers.dozzle.middlewares=authelia@docker"
