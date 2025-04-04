@@ -91,10 +91,8 @@ services:
 
   pgbackweb:
     image: eduardolat/pgbackweb:latest
-    ports:
-      - "8085:8085" # Access the web interface at http://localhost:8085
     volumes:
-      - ../data/pgbackweb_backups:/backups # Mount your backup directory
+      - ../data/pgbackweb_backups:/backups # Mounting the backup dir
     environment:
       PBW_ENCRYPTION_KEY: "fPLOhZupFq+S8Rt2SmcF7wQD2TkyeL4VwiThWO0JR0U="
       PBW_POSTGRES_CONN_STRING: "postgresql://postgres:password@pgbackweb_postgres:5432/pgbackweb?sslmode=disable"
